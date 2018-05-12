@@ -1,9 +1,3 @@
----
-output:
-  word_document: default
-  html_document: default
----
-
 ```{r}
 #US residential energy consumption data comes from the website
 # https://www.eia.gov/totalenergy/data/browser/?tbl=T02.02#/>f=M 
@@ -79,8 +73,5 @@ lines(x = (1+months):(27+months), y = fut.LB, lty = 2, col = "pink")
 
 #Analysis Weaknesses
 # There is only correlation so we cannot conclude causation nor do we have any explanatory variables to give causation
-
-#Challenge: provide a research task and find data with the same characteristics as this assignment. 
-# I would expect number of visits at a ski resort (for example, Park City Mountain) to fluctuate from month to month and like our observed data, peak in the winter months. 
 ```
 
