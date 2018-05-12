@@ -1,0 +1,86 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+#US residential energy consumption data comes from the website
+# https://www.eia.gov/totalenergy/data/browser/?tbl=T02.02#/>f=M 
+
+data1 <- read.csv("http://www.eia.gov/totalenergy/data/browser/csv.cfm?tbl=T02.01")
+
+#we will be using the dplyr library for piping 
+library(dplyr)
+
+#make a new dataframe which:
+data2 <- data1 %>%
+          #only entries where the MSN is TERCBUS
+          filter(MSN == "TERCBUS") %>%
+          #only keep entries from after your lifetime; I was born in 1995
+          filter(YYYYMM>199100) %>%
+          #get rid of all that end in month 13 becausethose are just yearly totals
+          filter(YYYYMM%%100 != 13)
+
+
+#create a vector of total energy consumed per month by the residential sector per Trillion BTU
+energy <- data2$Value
+months <- length(energy)
+
+#check out the data
+tail(data2)
+
+#EDA
+
+plot(x = 1:months, y = energy, xlab = "Time", ylab = "US Res. Energy Cons. in Trillions BTU", type = "b", main = "Suburban Energy Coonsumption Time Series")
+
+#This graph is wack, but a possible explaination for the fist months being more expensive is that they are during the winter. Electricity usage goes up during the winter because the day is shorter so lights are kept on longer and more lights in the house will be used. People also spend more time in their homes during the winter due to the cold weather. 
+
+#Rates were also rising during the 1990's possibly because more homes began to have more than one TV, home computers became popular and more affordable, and cell phones became more common. More electronic devices means high energy consumption. 
+```
+
+```{r}
+#use this library for SArima stuff
+library(astsa)
+
+#estimate the ARIMA(1,1,1)x(1,1,1)_12
+energy.out <- sarima(energy, 1, 1, 1, 1, 1, 1, 12)
+#remember to check estimated parameters and standard errors
+energy.out
+
+#table of estimates
+energy.out$ttable
+
+#Forecasting for the next two years, meaning the next 27 months since our data ends in Sept 2017 in order to give us predictions for all of 2018-2019
+future.energy <- sarima.for(energy, n.ahead = 27, 1, 1, 1, 1, 1, 1, 12)
+future.energy
+
+#Create a prediction interval UB and LB
+fut.LB <- future.energy$pred - qnorm(.975) * future.energy$se
+fut.UB <- future.energy$pred + qnorm(.975) * future.energy$se
+
+#table of predictions
+cbind(future.energy$pred, fut.LB, fut.UB)
+
+#Quality graphic including the forecast and prediction interval. Start at the 70th month to unscrunch the data and make it easier to see the prediction points and errors
+plot(x = 1:months, y = energy, xlab = "Time in Months Since Jan 1991", ylab = "Residental Energy Consumption (Trillions BTU)", type = "b", main = "2018-2019 Energy Consumtion Forecast", xlim = c(70,350))
+
+#add on the forecasted values
+lines(x = (1+months):(27+months), y = future.energy$pred, pch = 19, type = "b", col = "red")
+
+#add on the error bounds
+lines(x = (1+months):(27+months), y = fut.UB, lty = 2, col = "pink")
+lines(x = (1+months):(27+months), y = fut.LB, lty = 2, col = "pink")
+```
+
+```{r}
+#Research Task and Data features that match Analysis Strengths
+#The time series forecast shows that the previously observed correlation is expected to continue for 2018 and 2019.
+
+#Analysis Weaknesses
+# There is only correlation so we cannot conclude causation nor do we have any explanatory variables to give causation
+
+#Challenge: provide a research task and find data with the same characteristics as this assignment. 
+# I would expect number of visits at a ski resort (for example, Park City Mountain) to fluctuate from month to month and like our observed data, peak in the winter months. 
+```
+
